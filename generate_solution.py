@@ -14,6 +14,10 @@ def g(name):
     return "{" + guid(name) + "}"
 
 PUBLISHER_PREFIX = "adcci"
+APP_MODULE_UNIQUE_NAME = "adcci_ESGSustainabilityLabel"
+APP_MODULE_DISPLAY_NAME = "ESG Sustainability Label"
+APP_MODULE_DESCRIPTION = "Model-driven app for managing ESG Sustainability Label applications, assessments, reviews, certificates, and notifications."
+SITEMAP_UNIQUE_NAME = "adcci_ESGSustainabilityLabel"
 
 APPLICATION_STATUS = {
     "name": f"{PUBLISHER_PREFIX}_esgapplicationstatus",
@@ -902,6 +906,62 @@ def build_security_role_xml(roles_el, role_name, role_desc, privileges):
         ET.SubElement(privs, "RolePrivilege", name=priv_name, level=depth)
 
 
+def build_appmodule_xml(root):
+    app_modules_el = ET.SubElement(root, "AppModules")
+    app_module = ET.SubElement(app_modules_el, "AppModule")
+    ET.SubElement(app_module, "UniqueName").text = APP_MODULE_UNIQUE_NAME
+    ET.SubElement(app_module, "IntroducedVersion").text = "1.1.0.0"
+    ET.SubElement(app_module, "WebResourceId").text = "00000000-0000-0000-0000-000000000000"
+    ET.SubElement(app_module, "FormFactor").text = "3"
+    ET.SubElement(app_module, "ClientType").text = "4"
+    components_el = ET.SubElement(app_module, "AppModuleComponents")
+    for entity_def in ALL_ENTITIES:
+        ET.SubElement(components_el, "AppModuleComponent", type="1",
+            schemaName=entity_def["schema"], behavior="0")
+    sitemap_id = g(f"sitemap_{SITEMAP_UNIQUE_NAME}")
+    ET.SubElement(components_el, "AppModuleComponent", type="62", id=sitemap_id)
+    role_maps_el = ET.SubElement(app_module, "AppModuleRoleMaps")
+    for role_name in ["ESG Applicant", "ESG Products Section Head", "ESG Business Connect Director"]:
+        ET.SubElement(role_maps_el, "Role", id=g(f"role_{role_name}"))
+    ln = ET.SubElement(app_module, "LocalizedNames")
+    ET.SubElement(ln, "LocalizedName", description=APP_MODULE_DISPLAY_NAME, languagecode="1033")
+    descs = ET.SubElement(app_module, "Descriptions")
+    ET.SubElement(descs, "Description", description=APP_MODULE_DESCRIPTION, languagecode="1033")
+
+
+def build_appmodule_sitemap_xml(root):
+    sitemaps_el = ET.SubElement(root, "AppModuleSiteMaps")
+    sitemap_entry = ET.SubElement(sitemaps_el, "AppModuleSiteMap")
+    ET.SubElement(sitemap_entry, "SiteMapUniqueName").text = SITEMAP_UNIQUE_NAME
+    ET.SubElement(sitemap_entry, "SiteMapName").text = APP_MODULE_DISPLAY_NAME
+    sitemap_el = ET.SubElement(sitemap_entry, "SiteMap")
+    area = ET.SubElement(sitemap_el, "Area", Id="ESG", Title="ESG Sustainability",
+        ShowGroups="true", Icon="/_imgs/area/18_service.svg")
+    grp_apps = ET.SubElement(area, "Group", Id="ESGApplications", Title="Applications")
+    ET.SubElement(grp_apps, "SubArea", Id="nav_esgapplication",
+        Entity=f"{P}_esgapplication")
+    ET.SubElement(grp_apps, "SubArea", Id="nav_eligibilitycheck",
+        Entity=f"{P}_eligibilitycheck")
+    ET.SubElement(grp_apps, "SubArea", Id="nav_assessmentresponse",
+        Entity=f"{P}_assessmentresponse")
+    grp_docs = ET.SubElement(area, "Group", Id="ESGDocumentsReviews",
+        Title="Documents &amp; Reviews")
+    ET.SubElement(grp_docs, "SubArea", Id="nav_esgdocument",
+        Entity=f"{P}_esgdocument")
+    ET.SubElement(grp_docs, "SubArea", Id="nav_esgreview",
+        Entity=f"{P}_esgreview")
+    grp_reports = ET.SubElement(area, "Group", Id="ESGReportsCerts",
+        Title="Reports &amp; Certificates")
+    ET.SubElement(grp_reports, "SubArea", Id="nav_maturityreport",
+        Entity=f"{P}_maturityreport")
+    ET.SubElement(grp_reports, "SubArea", Id="nav_esgcertificate",
+        Entity=f"{P}_esgcertificate")
+    ET.SubElement(grp_reports, "SubArea", Id="nav_esgnotification",
+        Entity=f"{P}_esgnotification")
+    sm_ln = ET.SubElement(sitemap_entry, "LocalizedNames")
+    ET.SubElement(sm_ln, "LocalizedName", description=APP_MODULE_DISPLAY_NAME, languagecode="1033")
+
+
 def generate_customizations_xml():
     tree = ET.parse("/tmp/esg-solution/existing_solution/customizations.xml")
     root = tree.getroot()
@@ -971,6 +1031,8 @@ def generate_customizations_xml():
     build_security_role_xml(roles_el, "ESG Business Connect Director",
         "Role for the ADCCI Business Connect & Services Director. Can view all applications, provide final approval for maturity reports, and authorize certificate issuance.",
         director_privs)
+    build_appmodule_xml(root)
+    build_appmodule_sitemap_xml(root)
     return root
 
 
@@ -987,6 +1049,8 @@ def generate_solution_xml():
     for role_name in ["ESG Applicant", "ESG Products Section Head", "ESG Business Connect Director"]:
         role_id = g(f"role_{role_name}")
         ET.SubElement(root_comps, "RootComponent", type="20", id=role_id, behavior="0")
+    app_module_id = g(f"appmodule_{APP_MODULE_UNIQUE_NAME}")
+    ET.SubElement(root_comps, "RootComponent", type="80", id=app_module_id, behavior="0")
     return root
 
 
@@ -1030,6 +1094,8 @@ def main():
     print(f"  Global Option Sets: {len(ALL_OPTIONSETS)}")
     print(f"  Security Roles: 3")
     print(f"  Entity Relationships: 10")
+    print(f"  Model-Driven Apps: 1")
+    print(f"  SiteMaps: 1")
 
 
 if __name__ == "__main__":
