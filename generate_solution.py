@@ -985,7 +985,8 @@ def generate_solution_xml():
     for os_def in ALL_OPTIONSETS:
         ET.SubElement(root_comps, "RootComponent", type="9", schemaName=os_def["name"], behavior="0")
     for role_name in ["ESG Applicant", "ESG Products Section Head", "ESG Business Connect Director"]:
-        ET.SubElement(root_comps, "RootComponent", type="20", schemaName=role_name, behavior="0")
+        role_id = g(f"role_{role_name}")
+        ET.SubElement(root_comps, "RootComponent", type="20", id=role_id, behavior="0")
     return root
 
 
