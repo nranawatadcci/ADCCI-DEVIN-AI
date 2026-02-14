@@ -669,26 +669,36 @@ def build_entity_xml(entity_def, existing_entities_el):
         ("DisplayMask", "ValidForAdvancedFind|RequiredForGrid"), ("ImeMode", "auto"),
         ("ValidForUpdateApi", "0"), ("ValidForReadApi", "1"), ("ValidForCreateApi", "1"),
         ("IsCustomField", "0"), ("IsAuditEnabled", "0"), ("IsSecured", "0"),
-        ("IntroducedVersion", "1.1.0.0"), ("SourceType", "0")]:
+        ("IntroducedVersion", "1.1.0.0"), ("SourceType", "0"),
+        ("IsGlobalFilterEnabled", "0"), ("IsSortableEnabled", "0"),
+        ("IsDataSourceSecret", "0"),
+        ("IsSearchable", "0"), ("IsFilterable", "0"), ("IsRetrievable", "0"),
+        ("IsLocalizable", "0")]:
         ET.SubElement(pk, tag).text = val
+    ET.SubElement(pk, "AutoNumberFormat")
     pkdn = ET.SubElement(pk, "displaynames")
     ET.SubElement(pkdn, "displayname", description=display, languagecode="1033")
     pkdd = ET.SubElement(pk, "Descriptions")
     ET.SubElement(pkdd, "Description", description=f"Unique identifier for entity instances.", languagecode="1033")
     pf = ET.SubElement(attrs_el, "attribute", PhysicalName=entity_def["primary_field"])
     for tag, val in [("Type", "nvarchar"), ("Name", entity_def["primary_field"]),
-        ("LogicalName", entity_def["primary_field"].lower()), ("RequiredLevel", "required"),
-        ("DisplayMask", "ValidForAdvancedFind|ValidForForm|ValidForGrid"), ("ImeMode", "auto"),
+        ("LogicalName", entity_def["primary_field"].lower()), ("RequiredLevel", "none"),
+        ("DisplayMask", "ValidForAdvancedFind|ValidForForm|ValidForGrid|RequiredForGrid"),
+        ("ImeMode", "auto"),
         ("ValidForUpdateApi", "1"), ("ValidForReadApi", "1"), ("ValidForCreateApi", "1"),
-        ("IsCustomField", "1"), ("IsAuditEnabled", "1"), ("IsSecured", "0"),
-        ("IntroducedVersion", "1.1.0.0"), ("SourceType", "0"), ("IsSearchable", "1"),
-        ("IsFilterable", "1"), ("IsRetrievable", "1"), ("IsLocalizable", "0"),
-        ("IsPrimaryName", "1"), ("Length", "200"), ("Format", "text")]:
+        ("IsCustomField", "0"), ("IsAuditEnabled", "1"), ("IsSecured", "0"),
+        ("IntroducedVersion", "1.1.0.0"), ("SourceType", "0"),
+        ("IsGlobalFilterEnabled", "0"), ("IsSortableEnabled", "1"),
+        ("IsDataSourceSecret", "0"),
+        ("IsSearchable", "1"), ("IsFilterable", "1"), ("IsRetrievable", "1"),
+        ("IsLocalizable", "0"),
+        ("Length", "200"), ("Format", "text")]:
         ET.SubElement(pf, tag).text = val
+    ET.SubElement(pf, "AutoNumberFormat")
     pfdn = ET.SubElement(pf, "displaynames")
     ET.SubElement(pfdn, "displayname", description=entity_def["primary_display"], languagecode="1033")
     pfdd = ET.SubElement(pf, "Descriptions")
-    ET.SubElement(pfdd, "Description", description=f"Primary name field for {display}.", languagecode="1033")
+    ET.SubElement(pfdd, "Description", description=f"The name of the {display.lower()} record.", languagecode="1033")
     for attr_def in entity_def.get("attributes", []):
         attrs_el.append(build_attribute_xml(attr_def))
     forms_el = ET.SubElement(entity_el, "FormXml")
