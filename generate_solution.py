@@ -521,24 +521,35 @@ def build_attribute_xml(attr_def):
     ET.SubElement(attr_el, "IsAuditEnabled").text = "1"
     ET.SubElement(attr_el, "IsSecured").text = "0"
     ET.SubElement(attr_el, "IntroducedVersion").text = "1.1.0.0"
+    ET.SubElement(attr_el, "IsCustomizable").text = "1"
+    ET.SubElement(attr_el, "IsRenameable").text = "1"
+    ET.SubElement(attr_el, "CanModifySearchSettings").text = "1"
+    ET.SubElement(attr_el, "CanModifyRequirementLevelSettings").text = "1"
+    ET.SubElement(attr_el, "CanModifyAdditionalSettings").text = "1"
     ET.SubElement(attr_el, "SourceType").text = "0"
     ET.SubElement(attr_el, "IsGlobalFilterEnabled").text = "0"
-    ET.SubElement(attr_el, "IsSortableEnabled").text = "1"
+    ET.SubElement(attr_el, "IsSortableEnabled").text = "0"
+    ET.SubElement(attr_el, "CanModifyGlobalFilterSettings").text = "1"
+    ET.SubElement(attr_el, "CanModifyIsSortableSettings").text = "1"
     ET.SubElement(attr_el, "IsDataSourceSecret").text = "0"
     ET.SubElement(attr_el, "AutoNumberFormat")
-    ET.SubElement(attr_el, "IsSearchable").text = "1"
+    ET.SubElement(attr_el, "IsSearchable").text = "0"
     ET.SubElement(attr_el, "IsFilterable").text = "1"
     ET.SubElement(attr_el, "IsRetrievable").text = "1"
     ET.SubElement(attr_el, "IsLocalizable").text = "0"
     if atype == "nvarchar":
-        ET.SubElement(attr_el, "Length").text = str(a.get("maxlen", 200))
-        fmt = a.get("format", "text")
-        ET.SubElement(attr_el, "Format").text = fmt
+        maxlen = a.get("maxlen", 200)
+        ET.SubElement(attr_el, "Format").text = a.get("format", "text")
+        ET.SubElement(attr_el, "MaxLength").text = str(maxlen)
+        ET.SubElement(attr_el, "Length").text = str(maxlen * 2)
     elif atype == "memo":
-        ET.SubElement(attr_el, "Length").text = str(a.get("maxlen", 10000))
+        maxlen = a.get("maxlen", 10000)
         ET.SubElement(attr_el, "Format").text = "text"
+        ET.SubElement(attr_el, "MaxLength").text = str(maxlen)
+        ET.SubElement(attr_el, "Length").text = str(maxlen * 2)
     elif atype == "int":
-        ET.SubElement(attr_el, "MinValue").text = str(a.get("min", 0))
+        ET.SubElement(attr_el, "Format").text = "none"
+        ET.SubElement(attr_el, "MinValue").text = str(a.get("min", -2147483648))
         ET.SubElement(attr_el, "MaxValue").text = str(a.get("max", 2147483647))
     elif atype == "decimal":
         ET.SubElement(attr_el, "MinValue").text = str(a.get("min", 0))
@@ -638,30 +649,12 @@ def build_entity_xml(entity_def, existing_entities_el):
     einfo = ET.SubElement(entity_el, "EntityInfo")
     ent = ET.SubElement(einfo, "entity", Name=schema)
     pk_name = schema + "id"
-    ET.SubElement(ent, "PrimaryIdAttribute").text = pk_name
-    ET.SubElement(ent, "PrimaryNameAttribute").text = entity_def["primary_field"]
     ln = ET.SubElement(ent, "LocalizedNames")
     ET.SubElement(ln, "LocalizedName", description=display, languagecode="1033")
     lnp = ET.SubElement(ent, "LocalizedCollectionNames")
     ET.SubElement(lnp, "LocalizedCollectionName", description=display_plural, languagecode="1033")
     desc_el = ET.SubElement(ent, "Descriptions")
     ET.SubElement(desc_el, "Description", description=entity_def.get("description", ""), languagecode="1033")
-    for tag, val in [("EntitySetName", schema + "s"), ("IsBPFEntity", "0"), ("IsCustomEntity", "1"),
-        ("IsOwnershipTeamOrUser", "User"), ("OwnershipTypeMask", "UserOwned"),
-        ("HasRelatedNotes", "1"), ("HasRelatedActivities", "0"),
-        ("IsAuditEnabled", "1"),
-        ("IsVisibleInMobile", "1"), ("IsVisibleInMobileClient", "1"), ("IsActivity", "0"),
-        ("IsOfflineInMobileClient", "1"), ("IsConnectionsEnabled", "1"),
-        ("IsDocumentManagementEnabled", "0"),
-        ("IsCustomizable", "1"), ("IsRenameable", "1"), ("IsMappable", "1"),
-        ("IsDuplicateCheckSupported", "1"),
-        ("CanCreateAttributes", "1"), ("CanCreateForms", "1"), ("CanCreateViews", "1"), ("CanCreateCharts", "1"),
-        ("CanModifyAdditionalSettings", "1"), ("CanChangeHierarchicalRelationship", "1"),
-        ("CanEnableSyncToExternalSearchIndex", "1"), ("IsQuickCreateEnabled", "1"),
-        ("IsReadOnlyInMobileClient", "0"), ("IntroducedVersion", "1.1.0.0"), ("EntityColor", "#0078D4")]:
-        ET.SubElement(ent, tag).text = val
-    for tag in ["IconSmallName", "IconMediumName", "IconLargeName"]:
-        ET.SubElement(ent, tag)
     attrs_el = ET.SubElement(ent, "attributes")
     pk = ET.SubElement(attrs_el, "attribute", PhysicalName=pk_name)
     for tag, val in [("Type", "primarykey"), ("Name", pk_name),
@@ -669,38 +662,90 @@ def build_entity_xml(entity_def, existing_entities_el):
         ("DisplayMask", "ValidForAdvancedFind|RequiredForGrid"), ("ImeMode", "auto"),
         ("ValidForUpdateApi", "0"), ("ValidForReadApi", "1"), ("ValidForCreateApi", "1"),
         ("IsCustomField", "0"), ("IsAuditEnabled", "0"), ("IsSecured", "0"),
-        ("IntroducedVersion", "1.1.0.0"), ("SourceType", "0"),
-        ("IsGlobalFilterEnabled", "0"), ("IsSortableEnabled", "0"),
+        ("IntroducedVersion", "1.1.0.0"), ("IsCustomizable", "1"), ("IsRenameable", "1"),
+        ("CanModifySearchSettings", "1"), ("CanModifyRequirementLevelSettings", "0"),
+        ("CanModifyAdditionalSettings", "1"),
+        ("SourceType", "0"),
+        ("IsGlobalFilterEnabled", "1"), ("IsSortableEnabled", "1"),
+        ("CanModifyGlobalFilterSettings", "1"), ("CanModifyIsSortableSettings", "1"),
         ("IsDataSourceSecret", "0"),
-        ("IsSearchable", "0"), ("IsFilterable", "0"), ("IsRetrievable", "0"),
+        ("IsSearchable", "0"), ("IsFilterable", "1"), ("IsRetrievable", "1"),
         ("IsLocalizable", "0")]:
         ET.SubElement(pk, tag).text = val
     ET.SubElement(pk, "AutoNumberFormat")
     pkdn = ET.SubElement(pk, "displaynames")
     ET.SubElement(pkdn, "displayname", description=display, languagecode="1033")
     pkdd = ET.SubElement(pk, "Descriptions")
-    ET.SubElement(pkdd, "Description", description=f"Unique identifier for entity instances.", languagecode="1033")
+    ET.SubElement(pkdd, "Description", description="Unique identifier for entity instances", languagecode="1033")
     pf = ET.SubElement(attrs_el, "attribute", PhysicalName=entity_def["primary_field"])
     for tag, val in [("Type", "nvarchar"), ("Name", entity_def["primary_field"]),
-        ("LogicalName", entity_def["primary_field"].lower()), ("RequiredLevel", "none"),
-        ("DisplayMask", "ValidForAdvancedFind|ValidForForm|ValidForGrid|RequiredForGrid"),
+        ("LogicalName", entity_def["primary_field"].lower()), ("RequiredLevel", "required"),
+        ("DisplayMask", "PrimaryName|ValidForAdvancedFind|ValidForForm|ValidForGrid|RequiredForForm"),
         ("ImeMode", "auto"),
         ("ValidForUpdateApi", "1"), ("ValidForReadApi", "1"), ("ValidForCreateApi", "1"),
-        ("IsCustomField", "0"), ("IsAuditEnabled", "1"), ("IsSecured", "0"),
-        ("IntroducedVersion", "1.1.0.0"), ("SourceType", "0"),
-        ("IsGlobalFilterEnabled", "0"), ("IsSortableEnabled", "1"),
+        ("IsCustomField", "1"), ("IsAuditEnabled", "1"), ("IsSecured", "0"),
+        ("IntroducedVersion", "1.1.0.0"), ("IsCustomizable", "1"), ("IsRenameable", "1"),
+        ("CanModifySearchSettings", "1"), ("CanModifyRequirementLevelSettings", "1"),
+        ("CanModifyAdditionalSettings", "1"),
+        ("SourceType", "0"),
+        ("IsGlobalFilterEnabled", "0"), ("IsSortableEnabled", "0"),
+        ("CanModifyGlobalFilterSettings", "1"), ("CanModifyIsSortableSettings", "1"),
         ("IsDataSourceSecret", "0"),
-        ("IsSearchable", "1"), ("IsFilterable", "1"), ("IsRetrievable", "1"),
+        ("IsSearchable", "1"), ("IsFilterable", "0"), ("IsRetrievable", "1"),
         ("IsLocalizable", "0"),
-        ("Length", "200"), ("Format", "text")]:
+        ("Format", "text"), ("MaxLength", "200"), ("Length", "400")]:
         ET.SubElement(pf, tag).text = val
     ET.SubElement(pf, "AutoNumberFormat")
     pfdn = ET.SubElement(pf, "displaynames")
     ET.SubElement(pfdn, "displayname", description=entity_def["primary_display"], languagecode="1033")
     pfdd = ET.SubElement(pf, "Descriptions")
-    ET.SubElement(pfdd, "Description", description=f"The name of the {display.lower()} record.", languagecode="1033")
+    ET.SubElement(pfdd, "Description", description="Required name field", languagecode="1033")
     for attr_def in entity_def.get("attributes", []):
         attrs_el.append(build_attribute_xml(attr_def))
+    ET.SubElement(ent, "EntitySetName").text = schema + "s"
+    for tag, val in [("IsDuplicateCheckSupported", "0"), ("IsBusinessProcessEnabled", "0"),
+        ("IsRequiredOffline", "0"), ("IsInteractionCentricEnabled", "0"),
+        ("IsCollaboration", "0"), ("AutoRouteToOwnerQueue", "0"),
+        ("IsConnectionsEnabled", "0"), ("EntityColor", "#0078D4"),
+        ("IsDocumentManagementEnabled", "0"), ("AutoCreateAccessTeams", "0"),
+        ("IsOneNoteIntegrationEnabled", "0"), ("IsKnowledgeManagementEnabled", "0"),
+        ("IsSLAEnabled", "0"), ("IsDocumentRecommendationsEnabled", "0"),
+        ("IsBPFEntity", "0"), ("OwnershipTypeMask", "UserOwned"),
+        ("IsAuditEnabled", "0"), ("IsRetrieveAuditEnabled", "0"),
+        ("IsRetrieveMultipleAuditEnabled", "0"),
+        ("IsActivity", "0"), ("ActivityTypeMask", "CommunicationActivity"),
+        ("IsActivityParty", "0"),
+        ("IsReplicated", "0"), ("IsReplicationUserFiltered", "0"),
+        ("IsMailMergeEnabled", "0"),
+        ("IsVisibleInMobile", "1"), ("IsVisibleInMobileClient", "1"),
+        ("IsReadOnlyInMobileClient", "0"), ("IsOfflineInMobileClient", "0"),
+        ("DaysSinceRecordLastModified", "0"),
+        ("IsMapiGridEnabled", "1"), ("IsReadingPaneEnabled", "1"),
+        ("IsQuickCreateEnabled", "1"),
+        ("SyncToExternalSearchIndex", "0"),
+        ("IntroducedVersion", "1.1.0.0"),
+        ("IsCustomizable", "1"), ("IsRenameable", "1"), ("IsMappable", "1"),
+        ("CanModifyAuditSettings", "1"),
+        ("CanModifyMobileVisibility", "1"), ("CanModifyMobileClientVisibility", "1"),
+        ("CanModifyMobileClientReadOnly", "1"), ("CanModifyMobileClientOffline", "1"),
+        ("CanModifyConnectionSettings", "1"),
+        ("CanModifyDuplicateDetectionSettings", "1"), ("CanModifyMailMergeSettings", "1"),
+        ("CanModifyQueueSettings", "1"),
+        ("CanCreateAttributes", "1"), ("CanCreateForms", "1"),
+        ("CanCreateCharts", "1"), ("CanCreateViews", "1"),
+        ("CanModifyAdditionalSettings", "1"),
+        ("CanEnableSyncToExternalSearchIndex", "1"),
+        ("EnforceStateTransitions", "0"),
+        ("CanChangeHierarchicalRelationship", "1"),
+        ("EntityHelpUrlEnabled", "0"),
+        ("ChangeTrackingEnabled", "0"), ("CanChangeTrackingBeEnabled", "1"),
+        ("IsEnabledForExternalChannels", "0"),
+        ("IsMSTeamsIntegrationEnabled", "0"),
+        ("IsSolutionAware", "0"),
+        ("HasRelatedNotes", "True")]:
+        ET.SubElement(ent, tag).text = val
+    for tag in ["MobileOfflineFilters", "IconSmallName", "IconMediumName", "EntityHelpUrl"]:
+        ET.SubElement(ent, tag)
     forms_el = ET.SubElement(entity_el, "FormXml")
     forms_cont = ET.SubElement(forms_el, "forms", type="main")
     systemform = ET.SubElement(forms_cont, "systemform")
