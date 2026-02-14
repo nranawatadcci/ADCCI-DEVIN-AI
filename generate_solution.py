@@ -911,15 +911,19 @@ def build_appmodule_xml(root):
     app_module = ET.SubElement(app_modules_el, "AppModule")
     ET.SubElement(app_module, "UniqueName").text = APP_MODULE_UNIQUE_NAME
     ET.SubElement(app_module, "IntroducedVersion").text = "1.1.0.0"
-    ET.SubElement(app_module, "WebResourceId").text = "00000000-0000-0000-0000-000000000000"
-    ET.SubElement(app_module, "FormFactor").text = "3"
+    ET.SubElement(app_module, "WebResourceId").text = "953b9fac-1e5e-e611-80d6-00155ded156f"
+    ET.SubElement(app_module, "OptimizedFor")
+    ET.SubElement(app_module, "statecode").text = "0"
+    ET.SubElement(app_module, "statuscode").text = "1"
+    ET.SubElement(app_module, "FormFactor").text = "1"
     ET.SubElement(app_module, "ClientType").text = "4"
+    ET.SubElement(app_module, "NavigationType").text = "0"
     components_el = ET.SubElement(app_module, "AppModuleComponents")
     for entity_def in ALL_ENTITIES:
         ET.SubElement(components_el, "AppModuleComponent", type="1",
-            schemaName=entity_def["schema"], behavior="0")
-    sitemap_id = g(f"sitemap_{SITEMAP_UNIQUE_NAME}")
-    ET.SubElement(components_el, "AppModuleComponent", type="62", id=sitemap_id)
+            schemaName=entity_def["schema"])
+    ET.SubElement(components_el, "AppModuleComponent", type="62",
+        schemaName=SITEMAP_UNIQUE_NAME)
     role_maps_el = ET.SubElement(app_module, "AppModuleRoleMaps")
     for role_name in ["ESG Applicant", "ESG Products Section Head", "ESG Business Connect Director"]:
         ET.SubElement(role_maps_el, "Role", id=g(f"role_{role_name}"))
@@ -933,31 +937,66 @@ def build_appmodule_sitemap_xml(root):
     sitemaps_el = ET.SubElement(root, "AppModuleSiteMaps")
     sitemap_entry = ET.SubElement(sitemaps_el, "AppModuleSiteMap")
     ET.SubElement(sitemap_entry, "SiteMapUniqueName").text = SITEMAP_UNIQUE_NAME
-    ET.SubElement(sitemap_entry, "SiteMapName").text = APP_MODULE_DISPLAY_NAME
-    sitemap_el = ET.SubElement(sitemap_entry, "SiteMap")
-    area = ET.SubElement(sitemap_el, "Area", Id="ESG", Title="ESG Sustainability",
-        ShowGroups="true", Icon="/_imgs/area/18_service.svg")
-    grp_apps = ET.SubElement(area, "Group", Id="ESGApplications", Title="Applications")
+    ET.SubElement(sitemap_entry, "EnableCollapsibleGroups").text = "True"
+    ET.SubElement(sitemap_entry, "ShowHome").text = "True"
+    ET.SubElement(sitemap_entry, "ShowPinned").text = "True"
+    ET.SubElement(sitemap_entry, "ShowRecents").text = "True"
+    sitemap_el = ET.SubElement(sitemap_entry, "SiteMap", IntroducedVersion="1.1.0.0")
+    area = ET.SubElement(sitemap_el, "Area", Id="ESG",
+        ResourceId="SitemapDesigner.NewArea",
+        DescriptionResourceId="SitemapDesigner.NewArea",
+        ShowGroups="true", IntroducedVersion="1.1.0.0")
+    area_titles = ET.SubElement(area, "Titles")
+    ET.SubElement(area_titles, "Title", LCID="1033", Title="ESG Sustainability")
+    grp_apps = ET.SubElement(area, "Group", Id="ESGApplications",
+        ResourceId="SitemapDesigner.NewGroup",
+        IntroducedVersion="1.1.0.0", IsProfile="false",
+        ToolTipResourseId="SitemapDesigner.Unknown")
+    grp_apps_titles = ET.SubElement(grp_apps, "Titles")
+    ET.SubElement(grp_apps_titles, "Title", LCID="1033", Title="Applications")
     ET.SubElement(grp_apps, "SubArea", Id="nav_esgapplication",
-        Entity=f"{P}_esgapplication")
+        Entity=f"{P}_esgapplication",
+        Client="All,Outlook,OutlookLaptopClient,OutlookWorkstationClient,Web",
+        AvailableOffline="true", PassParams="false", Sku="All,OnPremise,Live,SPLA")
     ET.SubElement(grp_apps, "SubArea", Id="nav_eligibilitycheck",
-        Entity=f"{P}_eligibilitycheck")
+        Entity=f"{P}_eligibilitycheck",
+        Client="All,Outlook,OutlookLaptopClient,OutlookWorkstationClient,Web",
+        AvailableOffline="true", PassParams="false", Sku="All,OnPremise,Live,SPLA")
     ET.SubElement(grp_apps, "SubArea", Id="nav_assessmentresponse",
-        Entity=f"{P}_assessmentresponse")
+        Entity=f"{P}_assessmentresponse",
+        Client="All,Outlook,OutlookLaptopClient,OutlookWorkstationClient,Web",
+        AvailableOffline="true", PassParams="false", Sku="All,OnPremise,Live,SPLA")
     grp_docs = ET.SubElement(area, "Group", Id="ESGDocumentsReviews",
-        Title="Documents &amp; Reviews")
+        ResourceId="SitemapDesigner.NewGroup",
+        IsProfile="false", ToolTipResourseId="SitemapDesigner.Unknown")
+    grp_docs_titles = ET.SubElement(grp_docs, "Titles")
+    ET.SubElement(grp_docs_titles, "Title", LCID="1033", Title="Documents & Reviews")
     ET.SubElement(grp_docs, "SubArea", Id="nav_esgdocument",
-        Entity=f"{P}_esgdocument")
+        Entity=f"{P}_esgdocument",
+        Client="All,Outlook,OutlookLaptopClient,OutlookWorkstationClient,Web",
+        AvailableOffline="true", PassParams="false", Sku="All,OnPremise,Live,SPLA")
     ET.SubElement(grp_docs, "SubArea", Id="nav_esgreview",
-        Entity=f"{P}_esgreview")
+        Entity=f"{P}_esgreview",
+        Client="All,Outlook,OutlookLaptopClient,OutlookWorkstationClient,Web",
+        AvailableOffline="true", PassParams="false", Sku="All,OnPremise,Live,SPLA")
     grp_reports = ET.SubElement(area, "Group", Id="ESGReportsCerts",
-        Title="Reports &amp; Certificates")
+        ResourceId="SitemapDesigner.NewGroup",
+        IsProfile="false", ToolTipResourseId="SitemapDesigner.Unknown")
+    grp_reports_titles = ET.SubElement(grp_reports, "Titles")
+    ET.SubElement(grp_reports_titles, "Title", LCID="1033",
+        Title="Reports & Certificates")
     ET.SubElement(grp_reports, "SubArea", Id="nav_maturityreport",
-        Entity=f"{P}_maturityreport")
+        Entity=f"{P}_maturityreport",
+        Client="All,Outlook,OutlookLaptopClient,OutlookWorkstationClient,Web",
+        AvailableOffline="true", PassParams="false", Sku="All,OnPremise,Live,SPLA")
     ET.SubElement(grp_reports, "SubArea", Id="nav_esgcertificate",
-        Entity=f"{P}_esgcertificate")
+        Entity=f"{P}_esgcertificate",
+        Client="All,Outlook,OutlookLaptopClient,OutlookWorkstationClient,Web",
+        AvailableOffline="true", PassParams="false", Sku="All,OnPremise,Live,SPLA")
     ET.SubElement(grp_reports, "SubArea", Id="nav_esgnotification",
-        Entity=f"{P}_esgnotification")
+        Entity=f"{P}_esgnotification",
+        Client="All,Outlook,OutlookLaptopClient,OutlookWorkstationClient,Web",
+        AvailableOffline="true", PassParams="false", Sku="All,OnPremise,Live,SPLA")
     sm_ln = ET.SubElement(sitemap_entry, "LocalizedNames")
     ET.SubElement(sm_ln, "LocalizedName", description=APP_MODULE_DISPLAY_NAME, languagecode="1033")
 
