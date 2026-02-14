@@ -501,7 +501,7 @@ CONTROL_CLASSIDS = {
 }
 
 
-def build_attribute_xml(attr_def):
+def build_attribute_xml(attr_def, entity_schema=""):
     a = attr_def
     name = a["name"]
     atype = a["type"]
@@ -556,16 +556,32 @@ def build_attribute_xml(attr_def):
         ET.SubElement(attr_el, "MaxValue").text = str(a.get("max", 999999))
         ET.SubElement(attr_el, "Precision").text = str(a.get("precision", 2))
     elif atype == "bool":
-        optset = ET.SubElement(attr_el, "optionset")
-        ET.SubElement(optset, "optionsettype").text = "boolean"
-        true_opt = ET.SubElement(optset, "option", value="1")
+        ET.SubElement(attr_el, "AppDefaultValue").text = "0"
+        entity_logical = entity_schema.lower() if entity_schema else "adcci_entity"
+        attr_suffix = name.lower().replace("adcci_", "")
+        optset_name = f"adcci_{entity_logical}_{attr_suffix}"
+        optset = ET.SubElement(attr_el, "optionset", Name=optset_name)
+        ET.SubElement(optset, "OptionSetType").text = "bit"
+        ET.SubElement(optset, "IntroducedVersion").text = "1.1.0.0"
+        ET.SubElement(optset, "IsCustomizable").text = "1"
+        os_dn = ET.SubElement(optset, "displaynames")
+        ET.SubElement(os_dn, "displayname", description="Local Enumeration", languagecode="1033")
+        os_desc = ET.SubElement(optset, "Descriptions")
+        ET.SubElement(os_desc, "Description", description="", languagecode="1033")
+        options_el = ET.SubElement(optset, "options")
+        true_opt = ET.SubElement(options_el, "option", value="1", IsHidden="0")
         tl = ET.SubElement(true_opt, "labels")
         ET.SubElement(tl, "label", description=a.get("true_label", "Yes"), languagecode="1033")
-        false_opt = ET.SubElement(optset, "option", value="0")
+        false_opt = ET.SubElement(options_el, "option", value="0", IsHidden="0")
         fl = ET.SubElement(false_opt, "labels")
         ET.SubElement(fl, "label", description=a.get("false_label", "No"), languagecode="1033")
+    elif atype == "datetime":
+        ET.SubElement(attr_el, "Format").text = a.get("format", "datetime")
+        ET.SubElement(attr_el, "CanChangeDateTimeBehavior").text = "1"
+        ET.SubElement(attr_el, "Behavior").text = "1"
     elif atype == "optionset":
         optref = a.get("optionset", {})
+        ET.SubElement(attr_el, "AppDefaultValue").text = "-1"
         ET.SubElement(attr_el, "OptionSetName").text = optref.get("name", "")
     elif atype == "lookup":
         ET.SubElement(attr_el, "LookupStyle").text = "single"
@@ -701,7 +717,7 @@ def build_entity_xml(entity_def, existing_entities_el):
     pfdd = ET.SubElement(pf, "Descriptions")
     ET.SubElement(pfdd, "Description", description="Required name field", languagecode="1033")
     for attr_def in entity_def.get("attributes", []):
-        attrs_el.append(build_attribute_xml(attr_def))
+        attrs_el.append(build_attribute_xml(attr_def, entity_schema=schema))
     ET.SubElement(ent, "EntitySetName").text = schema + "s"
     for tag, val in [("IsDuplicateCheckSupported", "0"), ("IsBusinessProcessEnabled", "0"),
         ("IsRequiredOffline", "0"), ("IsInteractionCentricEnabled", "0"),
