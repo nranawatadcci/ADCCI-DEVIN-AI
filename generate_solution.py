@@ -19,6 +19,26 @@ APP_MODULE_DISPLAY_NAME = "ESG Sustainability Label"
 APP_MODULE_DESCRIPTION = "Model-driven app for managing ESG Sustainability Label applications, assessments, reviews, certificates, and notifications."
 SITEMAP_UNIQUE_NAME = "adcci_ESGSustainabilityLabel"
 
+BPF_WORKFLOW_ID = guid("bpf_esg_application_process")
+BPF_UNIQUE_NAME = f"adcci_bpf_{BPF_WORKFLOW_ID.replace('-', '')}"
+BPF_DISPLAY_NAME = "ESG Application Process"
+BPF_PRIMARY_ENTITY = f"{PUBLISHER_PREFIX}_esgapplication"
+
+BPF_STAGES = [
+    {"name": "EOI Submission", "field": f"{PUBLISHER_PREFIX}_applicantid", "field_display": "Applicant"},
+    {"name": "Eligibility Screening", "field": f"{PUBLISHER_PREFIX}_eligibilityscore", "field_display": "Eligibility Score"},
+    {"name": "Self-Assessment", "field": f"{PUBLISHER_PREFIX}_assessmentdeadline", "field_display": "Assessment Deadline"},
+    {"name": "Document Validation", "field": f"{PUBLISHER_PREFIX}_applicationstatus", "field_display": "Application Status"},
+    {"name": "Scoring & Reporting", "field": f"{PUBLISHER_PREFIX}_overallmaturityscore", "field_display": "Overall Maturity Score"},
+    {"name": "Report Endorsement", "field": f"{PUBLISHER_PREFIX}_applicationstatus", "field_display": "Application Status"},
+    {"name": "Final Approval", "field": f"{PUBLISHER_PREFIX}_applicationstatus", "field_display": "Application Status"},
+    {"name": "Certification", "field": f"{PUBLISHER_PREFIX}_labeltier", "field_display": "Label Tier"},
+]
+
+for i, stage in enumerate(BPF_STAGES):
+    stage["stage_id"] = guid(f"bpf_stage_{i+1}")
+    stage["step_id"] = guid(f"bpf_step_{i+1}")
+
 APPLICATION_STATUS = {
     "name": f"{PUBLISHER_PREFIX}_esgapplicationstatus",
     "display": "ESG Application Status",
@@ -906,6 +926,151 @@ def build_security_role_xml(roles_el, role_name, role_desc, privileges):
         ET.SubElement(privs, "RolePrivilege", name=priv_name, level=depth)
 
 
+def generate_bpf_xaml():
+    wf_id_clean = BPF_WORKFLOW_ID.replace("-", "")
+    entity = BPF_PRIMARY_ENTITY
+    step_counter = [1]
+    def next_step():
+        v = step_counter[0]
+        step_counter[0] += 1
+        return v
+    rel_step = next_step()
+    entity_step = next_step()
+    stage_xmls = []
+    for idx, stage in enumerate(BPF_STAGES):
+        stage_step = next_step()
+        step_step = next_step()
+        ctrl_step = next_step()
+        next_stage_id = BPF_STAGES[idx + 1]["stage_id"] if idx < len(BPF_STAGES) - 1 else ""
+        stage_xml = f'''          <mxswa:ActivityReference AssemblyQualifiedName="Microsoft.Crm.Workflow.Activities.StageComposite, Microsoft.Crm.Workflow, Version=9.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" DisplayName="StageStep{stage_step}: {stage['name']}">
+            <mxswa:ActivityReference.Properties>
+              <sco:Collection x:TypeArguments="Variable" x:Key="Variables" />
+              <sco:Collection x:TypeArguments="Activity" x:Key="Activities">
+                <mxswa:ActivityReference AssemblyQualifiedName="Microsoft.Crm.Workflow.Activities.StepComposite, Microsoft.Crm.Workflow, Version=9.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" DisplayName="StepStep{step_step}: New Step">
+                  <mxswa:ActivityReference.Properties>
+                    <sco:Collection x:TypeArguments="Variable" x:Key="Variables" />
+                    <sco:Collection x:TypeArguments="Activity" x:Key="Activities">
+                      <Sequence DisplayName="ControlStep{ctrl_step}">
+                        <mcwb:Control ClassId="67fac785-cd58-4f9f-abb3-4b7ddc6ed5ed" ControlDisplayName="{stage['field_display']}" ControlId="{stage['field']}" DataFieldName="{stage['field']}" IsSystemControl="False" IsUnbound="False" SystemStepType="0">
+                          <mcwb:Control.Parameters>
+                            <InArgument x:TypeArguments="x:String">
+                              <Literal x:TypeArguments="x:String" Value="" />
+                            </InArgument>
+                          </mcwb:Control.Parameters>
+                        </mcwb:Control>
+                      </Sequence>
+                    </sco:Collection>
+                    <sco:Collection x:TypeArguments="mcwo:StepLabel" x:Key="StepLabels">
+                      <mcwo:StepLabel Description="{stage['name']}" LabelId="{stage['step_id']}" LanguageCode="1033" />
+                    </sco:Collection>
+                    <x:String x:Key="ProcessStepId">{stage['step_id']}</x:String>
+                    <x:Boolean x:Key="IsProcessRequired">False</x:Boolean>
+                  </mxswa:ActivityReference.Properties>
+                </mxswa:ActivityReference>
+              </sco:Collection>
+              <sco:Collection x:TypeArguments="mcwo:StepLabel" x:Key="StepLabels">
+                <mcwo:StepLabel Description="{stage['name']}" LabelId="{stage['stage_id']}" LanguageCode="1033" />
+              </sco:Collection>
+              <x:String x:Key="StageId">{stage['stage_id']}</x:String>
+              <x:String x:Key="StageCategory">0</x:String>
+              <x:String x:Key="NextStageId">{next_stage_id}</x:String>
+            </mxswa:ActivityReference.Properties>
+          </mxswa:ActivityReference>'''
+        stage_xmls.append(stage_xml)
+    stages_content = "\n".join(stage_xmls)
+    xaml = f'''<Activity x:Class="XrmWorkflow{wf_id_clean}" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mcwb="clr-namespace:Microsoft.Crm.Workflow.BusinessProcessFlowActivities;assembly=Microsoft.Crm.Workflow, Version=9.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" xmlns:mcwc="clr-namespace:Microsoft.Crm.Workflow.ClientActivities;assembly=Microsoft.Crm.Workflow, Version=9.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" xmlns:mcwo="clr-namespace:Microsoft.Crm.Workflow.ObjectModel;assembly=Microsoft.Crm, Version=9.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" xmlns:mxs="clr-namespace:Microsoft.Xrm.Sdk;assembly=Microsoft.Xrm.Sdk, Version=9.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" xmlns:mxsq="clr-namespace:Microsoft.Xrm.Sdk.Query;assembly=Microsoft.Xrm.Sdk, Version=9.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" xmlns:mxswa="clr-namespace:Microsoft.Xrm.Sdk.Workflow.Activities;assembly=Microsoft.Xrm.Sdk.Workflow, Version=9.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" xmlns:s="clr-namespace:System;assembly=mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" xmlns:srs="clr-namespace:System.Runtime.Serialization;assembly=System.Runtime.Serialization, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" xmlns:this="clr-namespace:" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="InputEntities" Type="InArgument(scg:IDictionary(x:String, mxs:Entity))" />
+    <x:Property Name="CreatedEntities" Type="InArgument(scg:IDictionary(x:String, mxs:Entity))" />
+  </x:Members>
+  <this:XrmWorkflow{wf_id_clean}.InputEntities>
+    <InArgument x:TypeArguments="scg:IDictionary(x:String, mxs:Entity)" />
+  </this:XrmWorkflow{wf_id_clean}.InputEntities>
+  <this:XrmWorkflow{wf_id_clean}.CreatedEntities>
+    <InArgument x:TypeArguments="scg:IDictionary(x:String, mxs:Entity)" />
+  </this:XrmWorkflow{wf_id_clean}.CreatedEntities>
+  <mva:VisualBasic.Settings>Assembly references and imported namespaces for internal implementation</mva:VisualBasic.Settings>
+  <mxswa:Workflow>
+    <mxswa:ActivityReference AssemblyQualifiedName="Microsoft.Crm.Workflow.BusinessProcessFlowActivities.StageRelationshipCollectionComposite, Microsoft.Crm.Workflow, Version=9.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" DisplayName="RelationshipCollectionStep{rel_step}">
+      <mxswa:ActivityReference.Properties>
+        <sco:Collection x:TypeArguments="Variable" x:Key="Variables" />
+        <sco:Collection x:TypeArguments="Activity" x:Key="Activities" />
+      </mxswa:ActivityReference.Properties>
+    </mxswa:ActivityReference>
+    <mxswa:ActivityReference AssemblyQualifiedName="Microsoft.Crm.Workflow.Activities.EntityComposite, Microsoft.Crm.Workflow, Version=9.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" DisplayName="EntityStep{entity_step}: {entity}">
+      <mxswa:ActivityReference.Properties>
+        <sco:Collection x:TypeArguments="Variable" x:Key="Variables" />
+        <sco:Collection x:TypeArguments="Activity" x:Key="Activities">
+{stages_content}
+        </sco:Collection>
+        <x:Null x:Key="RelationshipName" />
+        <x:Null x:Key="AttributeName" />
+        <x:Boolean x:Key="IsClosedLoop">False</x:Boolean>
+      </mxswa:ActivityReference.Properties>
+    </mxswa:ActivityReference>
+  </mxswa:Workflow>
+</Activity>'''
+    return xaml
+
+
+def generate_bpf_data_xml():
+    role_assignments = "&lt;DisplayConditions&gt;"
+    for role_name in ["ESG Applicant", "ESG Products Section Head", "ESG Business Connect Director"]:
+        role_id = guid(f"role_{role_name}")
+        role_assignments += f'&lt;Role Id="{{{role_id}}}" /&gt;'
+    role_assignments += "&lt;/DisplayConditions&gt;"
+    xaml_filename = f"/Workflows/{BPF_DISPLAY_NAME.replace(' ', '')}-{BPF_WORKFLOW_ID.upper()}.xaml"
+    step_labels = ""
+    for stage in BPF_STAGES:
+        step_labels += f'    <steplabels id="{{{stage["stage_id"]}}}">\n'
+        step_labels += f'      <label languagecode="1033" description="{stage["name"]}" />\n'
+        step_labels += '    </steplabels>\n'
+        step_labels += f'    <steplabels id="{{{stage["step_id"]}}}">\n'
+        step_labels += f'      <label languagecode="1033" description="{stage["name"]}" />\n'
+        step_labels += '    </steplabels>\n'
+    data_xml = f'''<?xml version="1.0" encoding="utf-8"?>
+<Workflow WorkflowId="{{{BPF_WORKFLOW_ID}}}" Name="{BPF_DISPLAY_NAME}" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <XamlFileName>{xaml_filename}</XamlFileName>
+  <Type>1</Type>
+  <Subprocess>0</Subprocess>
+  <Category>4</Category>
+  <Mode>0</Mode>
+  <Scope>4</Scope>
+  <OnDemand>0</OnDemand>
+  <TriggerOnCreate>1</TriggerOnCreate>
+  <TriggerOnDelete>0</TriggerOnDelete>
+  <AsyncAutodelete>0</AsyncAutodelete>
+  <SyncWorkflowLogOnFailure>0</SyncWorkflowLogOnFailure>
+  <StateCode>0</StateCode>
+  <StatusCode>1</StatusCode>
+  <processorder>0</processorder>
+  <processroleassignment>{role_assignments}</processroleassignment>
+  <RunAs>1</RunAs>
+  <UniqueName>{BPF_UNIQUE_NAME}</UniqueName>
+  <IsTransacted>1</IsTransacted>
+  <IntroducedVersion>1.1.0.0</IntroducedVersion>
+  <IsCustomizable>1</IsCustomizable>
+  <BusinessProcessType>0</BusinessProcessType>
+  <IsCustomProcessingStepAllowedForOtherPublishers>1</IsCustomProcessingStepAllowedForOtherPublishers>
+  <ProcessTriggerScope>1</ProcessTriggerScope>
+  <PrimaryEntity>{BPF_PRIMARY_ENTITY}</PrimaryEntity>
+  <LocalizedNames>
+    <LocalizedName languagecode="1033" description="{BPF_DISPLAY_NAME}" />
+  </LocalizedNames>
+  <labels>
+{step_labels}  </labels>
+</Workflow>'''
+    return data_xml
+
+
+def get_bpf_xaml_filename():
+    return f"{BPF_DISPLAY_NAME.replace(' ', '')}-{BPF_WORKFLOW_ID.upper()}.xaml"
+
+
+def get_bpf_data_filename():
+    return f"{BPF_DISPLAY_NAME.replace(' ', '')}-{BPF_WORKFLOW_ID.upper()}.xaml.data.xml"
+
+
 def build_appmodule_xml(root):
     app_modules_el = ET.SubElement(root, "AppModules")
     app_module = ET.SubElement(app_modules_el, "AppModule")
@@ -1089,6 +1254,7 @@ def generate_solution_xml():
         role_id = g(f"role_{role_name}")
         ET.SubElement(root_comps, "RootComponent", type="20", id=role_id, behavior="0")
     ET.SubElement(root_comps, "RootComponent", type="80", schemaName=APP_MODULE_UNIQUE_NAME, behavior="0")
+    ET.SubElement(root_comps, "RootComponent", type="29", id=g("bpf_esg_application_process"), behavior="0")
     return root
 
 
@@ -1113,14 +1279,32 @@ def main():
     sol_root = generate_solution_xml()
     with open(os.path.join(output_dir, "solution.xml"), "w", encoding="utf-8") as f:
         f.write(prettify(sol_root))
-    shutil.copy("/tmp/esg-solution/existing_solution/[Content_Types].xml",
-        os.path.join(output_dir, "[Content_Types].xml"))
+    print("Generating BPF workflow files...")
+    wf_dir = os.path.join(output_dir, "Workflows")
+    os.makedirs(wf_dir, exist_ok=True)
+    xaml_content = generate_bpf_xaml()
+    xaml_fname = get_bpf_xaml_filename()
+    with open(os.path.join(wf_dir, xaml_fname), "w", encoding="utf-8") as f:
+        f.write(xaml_content)
+    data_xml_content = generate_bpf_data_xml()
+    data_fname = get_bpf_data_filename()
+    with open(os.path.join(wf_dir, data_fname), "w", encoding="utf-8") as f:
+        f.write(data_xml_content)
+    content_types_xml = '''<?xml version="1.0" encoding="utf-8"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="xml" ContentType="application/octet-stream" />
+  <Default Extension="xaml" ContentType="application/octet-stream" />
+</Types>'''
+    with open(os.path.join(output_dir, "[Content_Types].xml"), "w", encoding="utf-8") as f:
+        f.write(content_types_xml)
     zip_name = "ADCCIDEVINAIV1_1_1_0_0.zip"
     zip_path = os.path.join("/tmp/esg-solution", zip_name)
     print(f"Packaging {zip_name}...")
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
         for fname in ["customizations.xml", "solution.xml", "[Content_Types].xml"]:
             zf.write(os.path.join(output_dir, fname), fname)
+        zf.write(os.path.join(wf_dir, xaml_fname), f"Workflows/{xaml_fname}")
+        zf.write(os.path.join(wf_dir, data_fname), f"Workflows/{data_fname}")
     print(f"Solution package created: {zip_path}")
     with zipfile.ZipFile(zip_path, 'r') as zf:
         for info in zf.infolist():
@@ -1134,6 +1318,8 @@ def main():
     print(f"  Entity Relationships: 10")
     print(f"  Model-Driven Apps: 1")
     print(f"  SiteMaps: 1")
+    print(f"  Business Process Flows: 1")
+    print(f"  BPF Stages: {len(BPF_STAGES)}")
 
 
 if __name__ == "__main__":
