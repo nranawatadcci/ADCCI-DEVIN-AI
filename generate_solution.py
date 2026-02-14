@@ -768,18 +768,56 @@ def build_entity_xml(entity_def, existing_entities_el):
     ET.SubElement(systemform, "formid").text = g(f"form_{schema}_main")
     ET.SubElement(systemform, "IntroducedVersion").text = "1.1.0.0"
     ET.SubElement(systemform, "FormPresentation").text = "1"
+    ET.SubElement(systemform, "FormActivationState").text = "1"
+    form_el = ET.SubElement(systemform, "form")
+    form_el.set("shownavigationbar", "true")
+    form_el.set("showImage", "false")
+    form_el.set("maxWidth", "1920")
+    form_inner = ET.fromstring(build_form_xml(entity_def))
+    for child in form_inner:
+        form_el.append(child)
+    dc = ET.SubElement(form_el, "DisplayConditions", Order="0", FallbackForm="true")
+    ET.SubElement(dc, "Everyone")
+    ET.SubElement(systemform, "IsCustomizable").text = "1"
+    ET.SubElement(systemform, "CanBeDeleted").text = "1"
     ln2 = ET.SubElement(systemform, "LocalizedNames")
     ET.SubElement(ln2, "LocalizedName", description="Information", languagecode="1033")
     desc2 = ET.SubElement(systemform, "Descriptions")
     ET.SubElement(desc2, "Description", description=f"Main information form for {display}.", languagecode="1033")
-    form_el = ET.SubElement(systemform, "form")
-    form_inner = ET.fromstring(build_form_xml(entity_def))
-    for child in form_inner:
-        form_el.append(child)
     qc_forms = ET.SubElement(forms_el, "forms", type="quick")
     qc_sys = ET.SubElement(qc_forms, "systemform")
     ET.SubElement(qc_sys, "formid").text = g(f"form_{schema}_quick")
     ET.SubElement(qc_sys, "IntroducedVersion").text = "1.1.0.0"
+    ET.SubElement(qc_sys, "FormPresentation").text = "1"
+    ET.SubElement(qc_sys, "FormActivationState").text = "1"
+    qc_form_el = ET.SubElement(qc_sys, "form")
+    qc_form_el.set("shownavigationbar", "true")
+    qc_form_el.set("showImage", "false")
+    qc_form_el.set("maxWidth", "1920")
+    qc_tabs = ET.SubElement(qc_form_el, "tabs")
+    qc_tab = ET.SubElement(qc_tabs, "tab", name="general", id=g(f"form_qctab_{schema}"),
+        IsUserDefined="1", locklevel="0")
+    qc_tab_lbls = ET.SubElement(qc_tab, "labels")
+    ET.SubElement(qc_tab_lbls, "label", description="General", languagecode="1033")
+    qc_cols = ET.SubElement(qc_tab, "columns")
+    qc_col = ET.SubElement(qc_cols, "column", width="100%")
+    qc_secs = ET.SubElement(qc_col, "sections")
+    qc_sec = ET.SubElement(qc_secs, "section", name="quickcreate", showlabel="true",
+        showbar="false", locklevel="0", id=g(f"form_qcsec_{schema}"),
+        IsUserDefined="1", layout="varwidth", columns="2", labelwidth="115", celllabelposition="Left")
+    qc_sec_lbls = ET.SubElement(qc_sec, "labels")
+    ET.SubElement(qc_sec_lbls, "label", description="Quick Create", languagecode="1033")
+    qc_rows = ET.SubElement(qc_sec, "rows")
+    qc_row = ET.SubElement(qc_rows, "row")
+    qc_cell = ET.SubElement(qc_row, "cell", id=g(f"form_qccell_{schema}_name"), showlabel="true", locklevel="0")
+    qc_cell_lbls = ET.SubElement(qc_cell, "labels")
+    ET.SubElement(qc_cell_lbls, "label", description=entity_def["primary_display"], languagecode="1033")
+    ET.SubElement(qc_cell, "control", id=entity_def["primary_field"],
+        classid=CONTROL_CLASSIDS["nvarchar"], datafieldname=entity_def["primary_field"], disabled="false")
+    qc_dc = ET.SubElement(qc_form_el, "DisplayConditions", Order="0", FallbackForm="true")
+    ET.SubElement(qc_dc, "Everyone")
+    ET.SubElement(qc_sys, "IsCustomizable").text = "1"
+    ET.SubElement(qc_sys, "CanBeDeleted").text = "1"
     qc_ln = ET.SubElement(qc_sys, "LocalizedNames")
     ET.SubElement(qc_ln, "LocalizedName", description="Quick Create", languagecode="1033")
     views_el = ET.SubElement(entity_el, "SavedQueries")
