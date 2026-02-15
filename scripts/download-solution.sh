@@ -8,7 +8,7 @@ set -euo pipefail
 # Optional:
 #   SOLUTION_MANAGED    true|false (default: false)
 #   OUTPUT_DIR          folder path (default: .)
-#   OUTPUT_FILE         explicit filename (default: <SOLUTION_NAME>_<managed|unmanaged>.zip)
+#   OUTPUT_FILE         explicit filename (default: solution_1_0_0_0.zip)
 
 : "${DATAVERSE_ENV_URL:?Set DATAVERSE_ENV_URL, e.g. https://org.crm.dynamics.com}"
 : "${SOLUTION_NAME:?Set SOLUTION_NAME (solution unique name in Dataverse)}"
@@ -28,11 +28,7 @@ if ! command -v pac >/dev/null 2>&1; then
 fi
 
 if [[ -z "${OUTPUT_FILE:-}" ]]; then
-  PACKAGE_TYPE="unmanaged"
-  if [[ "$SOLUTION_MANAGED" == "true" ]]; then
-    PACKAGE_TYPE="managed"
-  fi
-  OUTPUT_FILE="${SOLUTION_NAME}_${PACKAGE_TYPE}.zip"
+  OUTPUT_FILE="solution_1_0_0_0.zip"
 fi
 
 OUT_PATH="${OUTPUT_DIR%/}/$OUTPUT_FILE"
