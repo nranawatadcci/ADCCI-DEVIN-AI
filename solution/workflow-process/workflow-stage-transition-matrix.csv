@@ -1,0 +1,22 @@
+Phase,Current Stage,Trigger/Condition,Action(s),Next Stage,Owner,SLA (days)
+EOI,EOI Submitted,EOI form submitted,"Create Application, set EOI Submitted On, send N-01",Eligibility Check,System,0
+EOI,Eligibility Check,All criteria passed and no flags,"Set status EOI Approved, set EOI Approval Date, set Self-Assessment Due = +15 days, send N-02",Self-Assessment In Progress,System,0
+EOI,Eligibility Check,Any criteria failed/flagged,"Set status EOI Flagged, create review record, send N-03 and request additional info",EOI Flagged - Awaiting Info,System,0
+EOI,EOI Flagged - Awaiting Info,Applicant provides explanation,"Attach explanation and evidence, notify Products Section Head",EOI Under Manual Review,Applicant,5
+EOI,EOI Under Manual Review,Products Section Head rejects,"Set status EOI Rejected, close application, send N-05",Closed - Rejected,Products Section Head,3
+EOI,EOI Under Manual Review,Products Section Head overrides and approves,"Set status EOI Approved, grant self-assessment access, send N-06",Self-Assessment In Progress,Products Section Head,3
+Assessment,Self-Assessment In Progress,Questionnaire submitted,"Lock questionnaire, notify validator",Self-Assessment Submitted,Applicant,15
+Validation,Self-Assessment Submitted,Completeness valid,"Set document status Submitted, create validation task",Document Validation,Products Section Head,3
+Validation,Document Validation,Incomplete submission,"Return for missing info, send correction notice",Returned for Missing Information,Products Section Head,3
+Validation,Returned for Missing Information,Applicant resubmits,"Attach additional documents, notify reviewer",Secondary Review,Applicant,5
+Validation,Secondary Review,Rejected,"Set validation outcome Rejected, close application",Closed - Rejected,Products Section Head,3
+Validation,Secondary Review,Partially validated,"Set validation outcome Partial, enable score adjustments",Scoring,System,1
+Validation,Secondary Review,Fully validated,"Set validation outcome Validated",Scoring,System,1
+Scoring,Scoring,Validation outcome partial/validated,"Calculate maturity score from responses and adjustments",Maturity Report Generated,System,0
+Scoring,Maturity Report Generated,Report generated,"Create maturity report record and PDF, send endorsement request",PSH Endorsement,System,0
+Endorsement,PSH Endorsement,PSH endorsed,"Capture endorsement metadata, route to director",Director Endorsement,Products Section Head,3
+Endorsement,PSH Endorsement,PSH returns for correction,"Set report status Returned, notify team",Scoring,Products Section Head,3
+Endorsement,Director Endorsement,Director approved,"Issue certificate + maturity report, set final decision Approved",Issue Certificate,System,3
+Endorsement,Director Endorsement,Director rejected,"Set final decision Rejected, notify applicant",Closed - Rejected,Director,3
+Closure,Issue Certificate,Certificate generated,"Store certificate reference, send final package",Application Closed,System,0
+Closure,Application Closed,Close operation,"Set state inactive/closed and Closed On",Process Completed,System,0
